@@ -76,14 +76,12 @@ int main(int argc, char *argv[]) {
 	    }
 	    stUdpMsg = (struct stMsg *)buf;
 
+		for(icnt=0; icnt < sizeof(struct stMsg); icnt++)
+		{
+			printf("%02X ",buf[icnt]);
+		}
 		printf("\n\r");
-		printf("Message ID : 0x%08X \n\r", ntohl(stUdpMsg->ulMsgId));
-		printf("File Name  : [%s] \n\r", stUdpMsg->cName);
-		printf("1st  Value : %d \n\r", ntohl(stUdpMsg->ulValue[0]));
-		printf("2nd  Value : %d \n\r", ntohl(stUdpMsg->ulValue[1]));
-		printf("3rd  Value : %d \n\r", ntohl(stUdpMsg->ulValue[2]));
-		printf("4th  Value : %d \n\r", ntohl(stUdpMsg->ulValue[3]));
-		
+
 	    switch(ntohl(stUdpMsg->ulMsgId))
 	    {
 	    	case CONNECTION_REQ:
@@ -92,11 +90,7 @@ int main(int argc, char *argv[]) {
 
 				for(icnt=0; icnt<NUMBER_OF_CLIENT; icnt++)
 				{
-					if(memcmp(&cliaddr.sin_addr.s_addr, &saved_cliaddr[icnt].sin_addr.s_addr, sizeof(int)) == 0)
-					{
-						break;
-					}
-					else if(saved_cliaddr[icnt].sin_addr.s_addr == 0)
+					if(saved_cliaddr[icnt].sin_addr.s_addr == 0)
 					{
 						memcpy(&saved_cliaddr[icnt], &cliaddr, sizeof(struct sockaddr_in));
 
@@ -111,7 +105,7 @@ int main(int argc, char *argv[]) {
 				}
 	    		up_buf.ulMsgId = htonl(CONNECTION_RSP);
 
-				if(sendto(socket_fd, &up_buf, sizeof(up_buf), 0, (struct sockaddr *)&cliaddr, addrlen) < 0)
+				if(sendto(socket_fd, &up_buf, sizeof(&up_buf), 0, (struct sockaddr *)&cliaddr, addrlen) < 0)
 				{
 					perror("sendto fail");
 					exit(0);
@@ -123,19 +117,18 @@ int main(int argc, char *argv[]) {
 
 				printf("Get Report Data Req\n\r");
 
-				up_buf.ulMsgId = htonl(PUSH_DATA_REQ);
-				printf("[%s] \n\r", stUdpMsg->cName);
-				strcpy(up_buf.cName, stUdpMsg->cName);
-				printf("[%s] \n\r", up_buf.cName);
-				up_buf.ulValue[0] = stUdpMsg->ulValue[0];
-				up_buf.ulValue[1] = stUdpMsg->ulValue[1];
-				up_buf.ulValue[2] = stUdpMsg->ulValue[2];
-				up_buf.ulValue[3] = stUdpMsg->ulValue[3];
+				up_buf.ulMsgId = htonl(REPORT_DATA_RSP);
+				if(sendto(socket_fd, &up_buf, sizeof(&up_buf), 0, (struct sockaddr *)&cliaddr, addrlen) < 0)
+				{
+					perror("sendto fail");
+					exit(0);
+				    puts("sendto complete");
+				}
 
+				up_buf.ulMsgId = htonl(PUSH_DATA_REQ);
 				for(icnt=0; icnt<NUMBER_OF_CLIENT; icnt++)
 				{
-					if( (memcmp(&cliaddr.sin_addr.s_addr, &saved_cliaddr[icnt].sin_addr.s_addr, sizeof(int)) != 0) &&
-						(saved_cliaddr[icnt].sin_addr.s_addr != 0) )
+					if(memcmp(&cliaddr, &saved_cliaddr[icnt], sizeof(struct sockaddr_in)) != 0)
 					{
 						printf("Send Push Data Req to %d.%d.%d.%d\n\r",
 							(saved_cliaddr[icnt].sin_addr.s_addr & 0xFF000000) >> 24,\
@@ -143,7 +136,7 @@ int main(int argc, char *argv[]) {
 							(saved_cliaddr[icnt].sin_addr.s_addr & 0x0000FF00) >> 8,\
 							(saved_cliaddr[icnt].sin_addr.s_addr & 0x000000FF) );
 							
-						if((sendto(socket_fd, &up_buf, sizeof(up_buf), 0, (struct sockaddr *)&saved_cliaddr[icnt], addrlen)) < 0) {
+						if((sendto(socket_fd, &up_buf, sizeof(&up_buf), 0, (struct sockaddr *)&saved_cliaddr[icnt], addrlen)) < 0) {
 					    	perror("sendto fail");
 						    exit(0);
 						}
