@@ -34,7 +34,7 @@ struct stMsg{
 	char		cName[MAX_FILE_NAME];
 };
 
-static unsigned int convertOrder(unsigned int x)
+static unsigned int converOrder(unsinged int x)
 {
 	unsigned int result = (x & 0xFF) << 24;
 	
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 	while(1)
 	{
 	    memset(buf, 0, sizeof(buf));
-	    memset((unsigned char *)&up_buf, 0x00, sizeof(struct stMsg));
+	    memset(&up_buf, 0, sizeof(struct stMsg));
 	    
 	    nbyte = recvfrom(socket_fd, buf, MAXLINE , 0, (struct sockaddr *)&cliaddr, &addrlen);
 	    if(nbyte< 0) 
@@ -95,11 +95,7 @@ int main(int argc, char *argv[]) {
 		}
 		printf("\n\r");
                 printf("up_buf\n\r");
-		up_buf.ulValue[0] = convertOrder(up_buf.ulValue[0]);
-		up_buf.ulValue[1] = convertOrder(up_buf.ulValue[1]);
-		up_buf.ulValue[2] = convertOrder(up_buf.ulValue[2]);
-		up_buf.ulValue[3] = convertOrder(up_buf.ulValue[3]);
-		printf("1 %d\n\r",up_buf.ulValue[0]);
+		printf("1 %d\n\r",convertOrder(up_buf.ulValue[0]));
 		printf("2 %d\n\r",up_buf.ulValue[1]);
 		printf("3 %d\n\r",up_buf.ulValue[2]);
 		printf("4 %d\n\r",up_buf.ulValue[3]);
@@ -140,8 +136,7 @@ int main(int argc, char *argv[]) {
 				printf("Get Report Data Req\n\r");
 
 				up_buf.ulMsgId = htonl(REPORT_DATA_RSP);
-				printf("%d\n", up_buf.ulValue[0]);
-				if(sendto(socket_fd, (unsigned char *)&up_buf, sizeof(struct stMsg), 0, (struct sockaddr *)&cliaddr, addrlen) < 0)
+				if(sendto(socket_fd, &up_buf, sizeof(&up_buf), 0, (struct sockaddr *)&cliaddr, addrlen) < 0)
 				{
 					perror("sendto fail");
 					exit(0);
@@ -149,7 +144,6 @@ int main(int argc, char *argv[]) {
 				}
 
 				up_buf.ulMsgId = htonl(PUSH_DATA_REQ);
-				printf("%d\n", up_buf.ulValue[0]);
 				for(icnt=0; icnt<NUMBER_OF_CLIENT; icnt++)
 				{
 					if(memcmp(&cliaddr, &saved_cliaddr[icnt], sizeof(struct sockaddr_in)) != 0)
@@ -160,7 +154,7 @@ int main(int argc, char *argv[]) {
 							(saved_cliaddr[icnt].sin_addr.s_addr & 0x0000FF00) >> 8,\
 							(saved_cliaddr[icnt].sin_addr.s_addr & 0x000000FF) );
 							
-						if((sendto(socket_fd, (unsigned char *)&up_buf, sizeof(struct stMsg), 0, (struct sockaddr *)&saved_cliaddr[icnt], addrlen)) < 0) {
+						if((sendto(socket_fd, &up_buf, sizeof(&up_buf), 0, (struct sockaddr *)&saved_cliaddr[icnt], addrlen)) < 0) {
 					    	perror("sendto fail");
 						    exit(0);
 						}
